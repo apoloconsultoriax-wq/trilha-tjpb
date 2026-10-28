@@ -23,19 +23,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Setup Pages
-        uses: actions/configure-pages@v5
-        with:
-          # Tenta habilitar o Pages (fonte: GitHub Actions) se ainda estiver desligado.
-          # O GITHUB_TOKEN padrão não tem administration:write; na primeira vez o dono
-          # do repositório pode precisar definir Source = GitHub Actions em Settings > Pages.
-          enablement: true
+        uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b # v5
+      # upload-pages-artifact@v3 (56afc609e74202658d3ffba0e8f6dda462b719fa) chama
+      # actions/upload-artifact@v4 por tag. A política do repositório também barra
+      # essa referência transitiva, então o tar e o upload são feitos aqui.
+      - name: Archive Pages artifact
+        shell: sh
+        run: |
+          tar \
+            --dereference --hard-dereference \
+            --directory "$INPUT_PATH" \
+            -cvf "$RUNNER_TEMP/artifact.tar" \
+            --exclude=.git \
+            --exclude=.github \
+            .
+        env:
+          INPUT_PATH: .
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          # v3 inclui arquivos ocultos, então .nojekyll entra no site publicado.
-          path: "."
+          name: github-pages
+          path: ${{ runner.temp }}/artifact.tar
+          retention-days: 1
+          if-no-files-found: error
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5
